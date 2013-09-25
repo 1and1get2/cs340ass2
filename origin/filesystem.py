@@ -5,7 +5,7 @@ This is where you do your work.
 Not only do you need to fill in the methods but you can also add any other classes, 
 methods or functions to this file to make your system pass all of the tests.
 
-@author: qzhu496
+@author: YOUR UPI
 '''
 
 from drive import Drive
@@ -13,7 +13,7 @@ from drive import Drive
 class A2File(object):
     '''
     One of these gets returned from Volume open.
-    ''' 
+    '''
     
     def __init__(self, params):
         '''
@@ -71,37 +71,12 @@ class Volume(object):
         one block for a file.
         Returns the volume.
         '''
-        if not name.decode():
-            raise ValueError("file name is empty")
-        if "\n" in name.decode():
-            raise ValueError("file name includes new line character")
-        if len(name.decode()) >= drive.num_bytes():
-            raise ValueError("file name is longer than vailable spaces")
-
-        volume = Volume()
-        # pass
-        volume.blocksOccupied = 1
-        volume.volumeName = name    # should i include '\n' or not?
-        volume.numberOfBlocks = drive.num_blocks()
-        volume.bitmap = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
-        def getOutput(self):
-            return (str(self.blocksOccupied) + "\n" + (self.volumeName).decode() + "\n" + 
-                str(self.numberOfBlocks) + "\n" + self.bitmap + "\n" + str(drive.num_blocks() - 1) + "\n")
-        # print ("print from format: \n" + str(getOutput(volume)))num_blocks
-        drive.write_block(0, getOutput(volume).encode('utf-8').ljust(drive.BLK_SIZE))
-        # drive.write_block(drive.num_blocks - 1, ((" 0\n" * 16).encode().ljust(drive.BLK_SIZE)))
-        drive.write_block(9, ('  0\n' * 16).encode().ljust(drive.BLK_SIZE))
-        # print ("print from format: " + str(blocksOccupied) + "\n" + str(volumeName) + str(numberOfBlocks))
-        # return Volume
-        return volume
-
-
+        pass
     
     def name(self):
         '''
         Returns the volumes name.
         '''
-        self.name
         pass
     
     def volume_data_blocks(self):

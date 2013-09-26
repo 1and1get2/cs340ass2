@@ -85,9 +85,10 @@ class Volume(object):
         volume.volumeName = name    # should i include '\n' or not?
         volume.numberOfBlocks = drive.num_blocks()
         volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
+        volume.rootDirIndex = drive.num_blocks() - 1
         def getOutput(self):
             return (str(self.blocksOccupied) + "\n" + (self.volumeName).decode() + "\n" + 
-                str(self.numberOfBlocks) + "\n" + self.bitmapStr + "\n" + str(drive.num_blocks() - 1) + "\n")
+                str(self.numberOfBlocks) + "\n" + self.bitmapStr + "\n" + str(volume.rootDirIndex) + "\n")
         volume.blocksOccupied = len(getOutput(volume)) // drive.BLK_SIZE + 1
         for i in range(volume.blocksOccupied):
             # if i > 0 and i < volume.numberOfBlocks:
@@ -145,28 +146,21 @@ class Volume(object):
         drive = Drive.reconnect(drive_name)
 
         '''
-        volume.BLK_SIZE = drive.BLK_SIZE
         volume.volumeName = name    # should i include '\n' or not?
         volume.numberOfBlocks = drive.num_blocks()
         volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
         '''
 
-
         volume.blocksOccupied = int(drive.read_block(0).split()[0].decode())
-        volumeInfoStr = ""
         volumeInfoByte = bytearray()
-        for i in range(volume.blocksOccupied-1):
-            # volumeInfoStr += drive.read_block(i).decode()
-            volumeInfoByte.append(drive.read_block(i))
-        # print("volumeInfoByte: " + volumeInfoByte )
-        for c in volumeInfoByte: print("volumeInfoByte: " + c)
-        print("volumeInfoByte: ".join(hex(ord(x))[2:] for x in volumeInfoByte))
-        # print ("volumeInfoStr: " + volumeInfoStr + " end")
-        # # print("drive.read_block(0).split(): " + drive.read_block(0).split()[0].decode())
-        # # print("read first block: " + str(drive.read_block(0).decode()[2]))
-        # print("read first block: " + drive.read_block(0).decode())
-        # drive.read_block(0).decode()
+        for i in range(volume.blocksOccupied):
+            volumeInfoByte += (drive.read_block(i))
 
+        volumeInfoStr = volumeInfoByte.decode().split('\n')
+        volume.volumeName = volumeInfoStr[1].encode()
+        volume.numberOfBlocks = int(volumeInfoStr[2])
+        volume.bitmapStr = volumeInfoStr[3]
+        volume.rootDirIndex = volumeInfoStr[4]
 
         return volume
     

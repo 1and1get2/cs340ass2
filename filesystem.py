@@ -56,7 +56,10 @@ class A2File(object):
         location to (location + amount - 1) is outside the range of the file.
         Areas within the range of the file return spaces if they have not been written to.
         '''
-        pass
+        if (location + amount - 1) > self.size():
+            raise IOError("out of bound")
+
+        return self.fileContentByte[location:location + amount]
 
 class Volume(object):
     '''

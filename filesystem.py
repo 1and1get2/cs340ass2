@@ -17,6 +17,7 @@ class A2File(object):
     ''' 
     fileName = ""
     fileSize = 0
+    fileContentByte = b''
 
     def __init__(self, filename):
         '''
@@ -25,7 +26,9 @@ class A2File(object):
         Volume.open method.
         You can use as many parameters as you need.
         '''
-        fileName = filename
+        self.fileName = filename
+        # fileSize = 0
+        # fileContentByte = b''
     
     def size(self):
         '''
@@ -39,6 +42,11 @@ class A2File(object):
         If location is greater than the size of the file the file is extended
         to the location with spaces. 
         '''
+        # self.fileSize += len(data)
+        self.fileContentByte = self.fileContentByte[:location] + b' ' * ((location - self.fileSize) if location > self.size() else 0) + data + self.fileContentByte[location:]
+        self.fileSize = len(self.fileContentByte)
+        # print("self.fileContentByte: " + self.fileContentByte.decode())
+        # if location 
         pass
     
     def read(self, location, amount):
@@ -184,7 +192,7 @@ class Volume(object):
         fileInfoStr = fileInfoByte.decode()
         fileList = [s.strip() for s in fileInfoByte.decode().split("\n") if not s.isdigit()]
         # print("fileInfoByte: " + fileInfoByte.decode())
-        print("fileList: " + str(fileList))
+        # print("fileList: " + str(fileList))
         # for s in fileMapBytes.decode().split('\n') :
         #     if s.isdigit() : print(str(s))
         return fileList
@@ -202,7 +210,7 @@ class Volume(object):
             raise ValueError("file name includes new line character")
 
         # if not os.path.exists(filename):
-        self.rootFileList()
+        fileList = self.rootFileList()
         file = A2File(filename)
         #open(filename, 'w+')
         return file

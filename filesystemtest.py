@@ -111,20 +111,20 @@ class Test(unittest.TestCase):
         self.assertEqual(50 + len(data), file.size())
         volume.unmount()
        
-    # def test_file_reads(self):
-    #     volume = Volume.format(Drive.format('driveE.txt', 8), b'file read volume')
-    #     file = volume.open(b'fileA')
-    #     data = b'A different fileA'
-    #     file.write(0, data)
-    #     with self.assertRaises(IOError):
-    #         file.read(30, 1)
-    #     with self.assertRaises(IOError):
-    #         file.read(0, 50)
-    #     self.assertEqual(data, file.read(0, len(data)))
-    #     self.assertEqual(b'if', file.read(3, 2))
-    #     file.write(file.size(), b'Aaargh' * 10)
-    #     self.assertEqual(b'arghAaarghAaargh', file.read(61, 16))
-    #     volume.unmount()
+    def test_file_reads(self):
+        volume = Volume.format(Drive.format('driveE.txt', 8), b'file read volume')
+        file = volume.open(b'fileA')
+        data = b'A different fileA'
+        file.write(0, data)
+        with self.assertRaises(IOError):
+            file.read(30, 1)
+        with self.assertRaises(IOError):
+            file.read(0, 50)
+        self.assertEqual(data, file.read(0, len(data)))
+        self.assertEqual(b'if', file.read(3, 2))
+        file.write(file.size(), b'Aaargh' * 10)
+        self.assertEqual(b'arghAaarghAaargh', file.read(61, 16))
+        volume.unmount()
        
     # def test_reconnect_drive_with_files(self):
     #     drive_name = 'driveF.txt'

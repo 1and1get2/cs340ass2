@@ -111,37 +111,37 @@ class Test(unittest.TestCase):
         self.assertEqual(50 + len(data), file.size())
         volume.unmount()
        
-    def test_file_reads(self):
-        volume = Volume.format(Drive.format('driveE.txt', 8), b'file read volume')
-        file = volume.open(b'fileA')
-        data = b'A different fileA'
-        file.write(0, data)
-        with self.assertRaises(IOError):
-            file.read(30, 1)
-        with self.assertRaises(IOError):
-            file.read(0, 50)
-        self.assertEqual(data, file.read(0, len(data)))
-        self.assertEqual(b'if', file.read(3, 2))
-        file.write(file.size(), b'Aaargh' * 10)
-        self.assertEqual(b'arghAaarghAaargh', file.read(61, 16))
-        volume.unmount()
+    # def test_file_reads(self):
+    #     volume = Volume.format(Drive.format('driveE.txt', 8), b'file read volume')
+    #     file = volume.open(b'fileA')
+    #     data = b'A different fileA'
+    #     file.write(0, data)
+    #     with self.assertRaises(IOError):
+    #         file.read(30, 1)
+    #     with self.assertRaises(IOError):
+    #         file.read(0, 50)
+    #     self.assertEqual(data, file.read(0, len(data)))
+    #     self.assertEqual(b'if', file.read(3, 2))
+    #     file.write(file.size(), b'Aaargh' * 10)
+    #     self.assertEqual(b'arghAaarghAaargh', file.read(61, 16))
+    #     volume.unmount()
        
-    def test_reconnect_drive_with_files(self):
-        drive_name = 'driveF.txt'
-        volume = Volume.format(Drive.format(drive_name, 12), b'reconnect with files volume')
-        filenames = [b'file1', b'file2', b'file3', b'file4']
-        files = [volume.open(name) for name in filenames]
-        for i, file in enumerate(files):
-            file.write(0, bytes(str(i).encode()) * 64)
-        files[0].write(files[0].size(), b'a')
-        volume.unmount()
-        volume = Volume.mount(drive_name)
-        file4 = volume.open(b'file4')
-        self.assertEqual(b'3333', file4.read(0, 4))
-        file1 = volume.open(b'file1')
-        self.assertEqual(65, file1.size())
-        self.assertEqual(b'0a', file1.read(63, 2))
-        volume.unmount()
+    # def test_reconnect_drive_with_files(self):
+    #     drive_name = 'driveF.txt'
+    #     volume = Volume.format(Drive.format(drive_name, 12), b'reconnect with files volume')
+    #     filenames = [b'file1', b'file2', b'file3', b'file4']
+    #     files = [volume.open(name) for name in filenames]
+    #     for i, file in enumerate(files):
+    #         file.write(0, bytes(str(i).encode()) * 64)
+    #     files[0].write(files[0].size(), b'a')
+    #     volume.unmount()
+    #     volume = Volume.mount(drive_name)
+    #     file4 = volume.open(b'file4')
+    #     self.assertEqual(b'3333', file4.read(0, 4))
+    #     file1 = volume.open(b'file1')
+    #     self.assertEqual(65, file1.size())
+    #     self.assertEqual(b'0a', file1.read(63, 2))
+    #     volume.unmount()
 
 if __name__ == "__main__":
     unittest.main()

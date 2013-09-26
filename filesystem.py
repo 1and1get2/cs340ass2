@@ -8,27 +8,30 @@ methods or functions to this file to make your system pass all of the tests.
 @author: qzhu496
 '''
 import os
+import math
 from drive import Drive
 
 class A2File(object):
     '''
     One of these gets returned from Volume open.
     ''' 
-    
-    def __init__(self, params):
+    fileName = ""
+    fileSize = 0
+
+    def __init__(self, filename):
         '''
         Initializes an A2File object.
         Not called from the test file but you should call this from the
         Volume.open method.
         You can use as many parameters as you need.
         '''
-        pass
+        fileName = filename
     
     def size(self):
         '''
         Returns the size of the file in bytes.
         '''
-        pass
+        return self.fileSize
     
     def write(self, location, data):
         '''
@@ -79,17 +82,17 @@ class Volume(object):
             raise ValueError("file name is longer than vailable spaces")
 
         volume = Volume()
-        # pass
+        volume.drive_name = drive.name
         volume.blocksOccupied = 1
         volume.BLK_SIZE = drive.BLK_SIZE
-        volume.volumeName = name    # should i include '\n' or not?
+        volume.volumeName = name
         volume.numberOfBlocks = drive.num_blocks()
         volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
         volume.rootDirIndex = drive.num_blocks() - 1
         def getOutput(self):
             return (str(self.blocksOccupied) + "\n" + (self.volumeName).decode() + "\n" + 
                 str(self.numberOfBlocks) + "\n" + self.bitmapStr + "\n" + str(volume.rootDirIndex) + "\n")
-        volume.blocksOccupied = len(getOutput(volume)) // drive.BLK_SIZE + 1
+        volume.blocksOccupied = math.ceil(len(getOutput(volume)) / drive.BLK_SIZE)
         for i in range(volume.blocksOccupied):
             # if i > 0 and i < volume.numberOfBlocks:
             volume.bitmapStr = volume.bitmapStr[:i] + 'x' + volume.bitmapStr[i+1:]
@@ -151,11 +154,12 @@ class Volume(object):
         volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
         '''
 
+        volume.drive_name = drive.name
         volume.blocksOccupied = int(drive.read_block(0).split()[0].decode())
         volumeInfoByte = bytearray()
         for i in range(volume.blocksOccupied):
             volumeInfoByte += (drive.read_block(i))
-
+        volume.fileName = drive_name
         volumeInfoStr = volumeInfoByte.decode().split('\n')
         volume.volumeName = volumeInfoStr[1].encode()
         volume.numberOfBlocks = int(volumeInfoStr[2])
@@ -169,6 +173,21 @@ class Volume(object):
         Unmounts the volume and disconnects the drive.
         '''
         pass
+    def rootFileList(self):
+        drive = Drive.reconnect(self.drive_name)
+        fileMapBytes = drive.read_block(drive.num_blocks() -1 )
+        fileMapIndex = [int(s) for s in fileMapBytes.decode().split() if (s.isdigit() and s != '0' ) ]
+        fileInfoByte = bytearray()
+        for i in fileMapIndex:
+            fileInfoByte += drive.read_block(i)
+
+        fileInfoStr = fileInfoByte.decode()
+        fileList = [s.strip() for s in fileInfoByte.decode().split("\n") if not s.isdigit()]
+        # print("fileInfoByte: " + fileInfoByte.decode())
+        print("fileList: " + str(fileList))
+        # for s in fileMapBytes.decode().split('\n') :
+        #     if s.isdigit() : print(str(s))
+        return fileList
     
     def open(self, filename):
         '''
@@ -176,4 +195,14 @@ class Volume(object):
         If the file does not exist it is created.
         Returns an A2File object.
         '''
-        pass
+
+        if not filename.decode():
+            raise ValueError("file name is empty")
+        if "\n" in filename.decode():
+            raise ValueError("file name includes new line character")
+
+        # if not os.path.exists(filename):
+        self.rootFileList()
+        file = A2File(filename)
+        #open(filename, 'w+')
+        return file

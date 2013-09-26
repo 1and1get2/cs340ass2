@@ -38,7 +38,7 @@ class Test(unittest.TestCase):
 #         drive = Drive.reconnect('drive.txt')
 #         self.assertEqual(block_data, drive.read_block(0), 'written data not read')
 #         drive.disconnect()
-        
+    
     def test_new_volume(self):
         blocks = 10
         drive_name = 'driveA.txt'
@@ -94,11 +94,13 @@ class Test(unittest.TestCase):
         volume.unmount()
        
     def test_simple_file_creation(self):
+
 # the Volume didn't call format in the original
         volume = Volume.format(Drive.format('driveD.txt', 8), b'file creation volume')
         with self.assertRaises(ValueError):
             volume.open(b'fileA\n')
         file = volume.open(b'fileA')
+        # print("test_simple_file_creation" + file.fileContentByte.decode())
         self.assertEqual(0, file.size())
         data = b'Hello from fileA'
         file.write(0, data)
@@ -125,23 +127,24 @@ class Test(unittest.TestCase):
         file.write(file.size(), b'Aaargh' * 10)
         self.assertEqual(b'arghAaarghAaargh', file.read(61, 16))
         volume.unmount()
+    
        
-    # def test_reconnect_drive_with_files(self):
-    #     drive_name = 'driveF.txt'
-    #     volume = Volume.format(Drive.format(drive_name, 12), b'reconnect with files volume')
-    #     filenames = [b'file1', b'file2', b'file3', b'file4']
-    #     files = [volume.open(name) for name in filenames]
-    #     for i, file in enumerate(files):
-    #         file.write(0, bytes(str(i).encode()) * 64)
-    #     files[0].write(files[0].size(), b'a')
-    #     volume.unmount()
-    #     volume = Volume.mount(drive_name)
-    #     file4 = volume.open(b'file4')
-    #     self.assertEqual(b'3333', file4.read(0, 4))
-    #     file1 = volume.open(b'file1')
-    #     self.assertEqual(65, file1.size())
-    #     self.assertEqual(b'0a', file1.read(63, 2))
-    #     volume.unmount()
+    def test_reconnect_drive_with_files(self):
+        drive_name = 'driveF.txt'
+        volume = Volume.format(Drive.format(drive_name, 12), b'reconnect with files volume')
+        filenames = [b'file1', b'file2', b'file3', b'file4']
+        files = [volume.open(name) for name in filenames]
+        for i, file in enumerate(files):
+            file.write(0, bytes(str(i).encode()) * 64)
+        files[0].write(files[0].size(), b'a')
+        volume.unmount()
+        volume = Volume.mount(drive_name)
+        file4 = volume.open(b'file4')
+        self.assertEqual(b'3333', file4.read(0, 4))
+        file1 = volume.open(b'file1')
+        self.assertEqual(65, file1.size())
+        self.assertEqual(b'0a', file1.read(63, 2))
+        volume.unmount()
 
 if __name__ == "__main__":
     unittest.main()

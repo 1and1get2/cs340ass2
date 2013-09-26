@@ -60,6 +60,9 @@ class A2File(object):
             raise IOError("out of bound")
 
         return self.fileContentByte[location:location + amount]
+    def flush(self):
+        # print("self.fileContentByte: " + self.fileContentByte.decode())
+        pass
 
 class Volume(object):
     '''
@@ -73,6 +76,7 @@ class Volume(object):
         First block of root directory (called root_index) : as a string terminated with "\n" - always the last
             block on the drive.
     '''
+    openingFiles = []
 
     @staticmethod
     def format(drive, name):
@@ -104,9 +108,10 @@ class Volume(object):
             return (str(self.blocksOccupied) + "\n" + (self.volumeName).decode() + "\n" + 
                 str(self.numberOfBlocks) + "\n" + self.bitmapStr + "\n" + str(volume.rootDirIndex) + "\n")
         volume.blocksOccupied = math.ceil(len(getOutput(volume)) / drive.BLK_SIZE)
+        volume.bitmapStr = 'x' * volume.blocksOccupied + '-' * (volume.numberOfBlocks - 1 - volume.blocksOccupied) + 'x'
         for i in range(volume.blocksOccupied):
             # if i > 0 and i < volume.numberOfBlocks:
-            volume.bitmapStr = volume.bitmapStr[:i] + 'x' + volume.bitmapStr[i+1:]
+            # volume.bitmapStr = volume.bitmapStr[:i] + 'x' + volume.bitmapStr[i+1:]
             drive.write_block(i, getOutput(volume).encode()[i * volume.BLK_SIZE : i * volume.BLK_SIZE + volume.BLK_SIZE].ljust(drive.BLK_SIZE))
         
         drive.write_block(volume.numberOfBlocks - 1, ('  0\n' * 16).encode().ljust(drive.BLK_SIZE))
@@ -183,7 +188,11 @@ class Volume(object):
         '''
         Unmounts the volume and disconnects the drive.
         '''
-        pass
+        for i in self.openingFiles:
+            i.flush()
+        self.openingFiles = []
+        return Volume()
+
     def rootFileList(self):
         drive = Drive.reconnect(self.drive_name)
         fileMapBytes = drive.read_block(drive.num_blocks() -1 )
@@ -211,9 +220,21 @@ class Volume(object):
             raise ValueError("file name is empty")
         if "\n" in filename.decode():
             raise ValueError("file name includes new line character")
+        if "/" in filename.decode():
+            raise ValueError("does not support subdirectory yet")
+
 
         # if not os.path.exists(filename):
         fileList = self.rootFileList()
+        for i in self.openingFiles:
+            # if the file is already open
+            if i.fileName == filename : 
+                print("find file already opening: " + filename.decode())
+                # return i
+        # 
         file = A2File(filename)
+        self.openingFiles.append(file)
+        # print("opening files: " + filename.decode())
+
         #open(filename, 'w+')
         return file

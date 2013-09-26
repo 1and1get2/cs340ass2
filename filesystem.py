@@ -7,7 +7,7 @@ methods or functions to this file to make your system pass all of the tests.
 
 @author: qzhu496
 '''
-
+import os
 from drive import Drive
 
 class A2File(object):
@@ -81,18 +81,20 @@ class Volume(object):
         volume = Volume()
         # pass
         volume.blocksOccupied = 1
+        volume.BLK_SIZE = drive.BLK_SIZE
         volume.volumeName = name    # should i include '\n' or not?
         volume.numberOfBlocks = drive.num_blocks()
-        volume.bitmap = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
+        volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
         def getOutput(self):
             return (str(self.blocksOccupied) + "\n" + (self.volumeName).decode() + "\n" + 
-                str(self.numberOfBlocks) + "\n" + self.bitmap + "\n" + str(drive.num_blocks() - 1) + "\n")
-        # print ("print from format: \n" + str(getOutput(volume)))num_blocks
-        drive.write_block(0, getOutput(volume).encode('utf-8').ljust(drive.BLK_SIZE))
-        # drive.write_block(drive.num_blocks - 1, ((" 0\n" * 16).encode().ljust(drive.BLK_SIZE)))
-        drive.write_block(9, ('  0\n' * 16).encode().ljust(drive.BLK_SIZE))
-        # print ("print from format: " + str(blocksOccupied) + "\n" + str(volumeName) + str(numberOfBlocks))
-        # return Volume
+                str(self.numberOfBlocks) + "\n" + self.bitmapStr + "\n" + str(drive.num_blocks() - 1) + "\n")
+        volume.blocksOccupied = len(getOutput(volume)) // drive.BLK_SIZE + 1
+        for i in range(volume.blocksOccupied):
+            # if i > 0 and i < volume.numberOfBlocks:
+            volume.bitmapStr = volume.bitmapStr[:i] + 'x' + volume.bitmapStr[i+1:]
+            drive.write_block(i, getOutput(volume).encode()[i * volume.BLK_SIZE : i * volume.BLK_SIZE + volume.BLK_SIZE].ljust(drive.BLK_SIZE))
+        
+        drive.write_block(volume.numberOfBlocks - 1, ('  0\n' * 16).encode().ljust(drive.BLK_SIZE))
         return volume
 
 
@@ -101,34 +103,34 @@ class Volume(object):
         '''
         Returns the volumes name.
         '''
-        self.name
-        pass
+        return self.volumeName
+        
     
     def volume_data_blocks(self):
         '''
         Returns the number of blocks at the beginning of the drive which are used to hold
         the volume information.
         '''
-        pass
+        return self.blocksOccupied
         
     def size(self):
         '''
         Returns the number of blocks in the underlying drive.
         '''
-        pass
+        return self.numberOfBlocks
     
     def bitmap(self):
         '''
         Returns the volume block bitmap.
         '''
-        pass
+        return self.bitmapStr.encode()
     
     def root_index(self):
         '''
         Returns the block number of the first block of the root directory.
         Always the last block on the drive.
         '''
-        pass
+        return self.numberOfBlocks - 1
     
     @staticmethod
     def mount(drive_name):
@@ -137,7 +139,36 @@ class Volume(object):
         Any data on the drive is preserved.
         Returns the volume.
         '''
-        pass
+        # if not os.path.exists(drive_name):
+        #     raise IOError('file does not exist')
+        volume = Volume()
+        drive = Drive.reconnect(drive_name)
+
+        '''
+        volume.BLK_SIZE = drive.BLK_SIZE
+        volume.volumeName = name    # should i include '\n' or not?
+        volume.numberOfBlocks = drive.num_blocks()
+        volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
+        '''
+
+
+        volume.blocksOccupied = int(drive.read_block(0).split()[0].decode())
+        volumeInfoStr = ""
+        volumeInfoByte = bytearray()
+        for i in range(volume.blocksOccupied-1):
+            # volumeInfoStr += drive.read_block(i).decode()
+            volumeInfoByte.append(drive.read_block(i))
+        # print("volumeInfoByte: " + volumeInfoByte )
+        for c in volumeInfoByte: print("volumeInfoByte: " + c)
+        print("volumeInfoByte: ".join(hex(ord(x))[2:] for x in volumeInfoByte))
+        # print ("volumeInfoStr: " + volumeInfoStr + " end")
+        # # print("drive.read_block(0).split(): " + drive.read_block(0).split()[0].decode())
+        # # print("read first block: " + str(drive.read_block(0).decode()[2]))
+        # print("read first block: " + drive.read_block(0).decode())
+        # drive.read_block(0).decode()
+
+
+        return volume
     
     def unmount(self):
         '''

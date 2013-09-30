@@ -1,0 +1,363 @@
+'''
+Created on 27/08/2013
+
+This is where you do your work.
+Not only do you need to fill in the methods but you can also add any other classes, 
+methods or functions to this file to make your system pass all of the tests.
+
+@author: qzhu496
+'''
+import os
+import math
+from drive import Drive
+
+class A2File(object):
+    '''
+    One of these gets returned from Volume open.
+    ''' 
+    fileContentByte = b''
+
+    def __init__(self, filename, fileMapBytesIndex, size=0):
+        '''
+        Initializes an A2File object.
+        Not called from the test file but you should call this from the
+        Volume.open method.
+        You can use as many parameters as you need.
+        '''
+        self.fileName = filename
+        self.fileMapBytesIndex = fileMapBytesIndex
+        self.fileSize = size
+
+    def toString(self):
+        string = "fileName: {} size: {} fileMapBytesIndex: {} content is empty: {}".format(
+            self.fileName, self.fileSize, self.fileMapBytesIndex, self.fileContentByte==b'')
+        return string
+    
+    def size(self):
+        '''
+        Returns the size of the file in bytes.
+        '''
+        return self.fileSize
+    
+    def write(self, location, data):
+        '''
+        Writes data to a file at a specific byte location.
+        If location is greater than the size of the file the file is extended
+        to the location with spaces. 
+        '''
+        # self.fileSize += len(data)
+        self.fileContentByte = self.fileContentByte[:location] + b' ' * ((location - self.fileSize) if location > self.size() else 0) + data + self.fileContentByte[location:]
+        self.fileSize = len(self.fileContentByte)
+        # print("self.fileContentByte: " + self.fileContentByte.decode())
+        # if location 
+        pass
+    
+    def read(self, location, amount):
+        '''
+        Reads from a file at a specific byte location.
+        An exception is thrown if any of the range from
+        location to (location + amount - 1) is outside the range of the file.
+        Areas within the range of the file return spaces if they have not been written to.
+        '''
+        print("read file: " + self.fileName.decode() + " size: " + str(self.size()))
+        if (location + amount - 1) > self.size():
+            raise IOError("out of bound")
+
+        return self.fileContentByte[location:location + amount]
+    def flush(self):
+        # print("self.fileContentByte: " + self.fileContentByte.decode())
+        pass
+
+class Volume(object):
+    '''
+    A volume is the disk as it appears to the file system.
+    The disk structure is to be entirely stored in ASCII so that it
+    can be inspected easily. It must contain:
+        Volume data blocks: the number of contiguous blocks with the volume data - as a string, ends with "\n"
+        Name: at least one character plus "\n" for end of name)
+        Size: as a string terminated with "\n"
+        Free block bitmap: drive.num_blocks() + 1 bytes ("x" indicates used, "-" indicates free, ends with "\n")
+        First block of root directory (called root_index) : as a string terminated with "\n" - always the last
+            block on the drive.
+    '''
+    
+
+    @staticmethod
+    def format(drive, name):
+        '''
+        Creates a new volume in a disk.
+        Puts the initial metadata on the disk.
+        The name must be at least one byte long and not include "\n".
+        Raises an IOError if after the allocation of the volume information
+        there are not enough blocks to allocate the root directory and at least
+        one block for a file.
+        Returns the volume.
+        '''
+        if not name.decode():
+            raise ValueError("file name is empty")
+        if "\n" in name.decode():
+            raise ValueError("file name includes new line character")
+        if len(name.decode()) >= drive.num_bytes():
+            raise ValueError("file name is longer than vailable spaces")
+
+        volume = Volume()
+        # volume.drive_name = drive.name
+        volume.blocksOccupied = 1
+        volume.BLK_SIZE = drive.BLK_SIZE
+        volume.volumeName = name
+        volume.numberOfBlocks = drive.num_blocks()
+        volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
+        volume.rootDirIndex = drive.num_blocks() - 1
+        volume.rootFileList = []
+        volume.openingFiles = []
+        volume.drive = drive
+        volume.blocksOccupied = math.ceil(len(volume.getOutput()) / drive.BLK_SIZE)
+        volume.bitmapStr = 'x' * volume.blocksOccupied + '-' * (volume.numberOfBlocks - 1 - volume.blocksOccupied) + 'x'
+        for i in range(volume.blocksOccupied):
+            # if i > 0 and i < volume.numberOfBlocks:
+            # volume.bitmapStr = volume.bitmapStr[:i] + 'x' + volume.bitmapStr[i+1:]
+            drive.write_block(i, volume.getOutput().encode()[i * volume.BLK_SIZE : i * volume.BLK_SIZE + volume.BLK_SIZE].ljust(drive.BLK_SIZE))
+        
+        drive.write_block(volume.numberOfBlocks - 1, ('  0\n' * 16).encode().ljust(drive.BLK_SIZE))
+        return volume
+
+    def getOutput(self):
+        string = (str(self.blocksOccupied) + "\n" + (self.volumeName).decode() + "\n" + 
+            str(self.numberOfBlocks) + "\n" + self.bitmapStr + "\n" + str(self.rootDirIndex) + "\n")
+        # print ("string in getOutput: " + string)
+        return string
+
+    
+    def name(self):
+        '''
+        Returns the volumes name.
+        '''
+        return self.volumeName
+        
+    
+    def volume_data_blocks(self):
+        '''
+        Returns the number of blocks at the beginning of the drive which are used to hold
+        the volume information.
+        '''
+        return self.blocksOccupied
+        
+    def size(self):
+        '''
+        Returns the number of blocks in the underlying drive.
+        '''
+        return self.numberOfBlocks
+    
+    def bitmap(self):
+        '''
+        Returns the volume block bitmap.
+        '''
+        return self.bitmapStr.encode()
+    
+    def root_index(self):
+        '''
+        Returns the block number of the first block of the root directory.
+        Always the last block on the drive.
+        '''
+        return self.numberOfBlocks - 1
+    
+    @staticmethod
+    def mount(drive_name):
+        '''
+        Reconnects a drive as a volume.
+        Any data on the drive is preserved.
+        Returns the volume.
+        '''
+        print ("mounting file system: " + drive_name)
+        # if not os.path.exists(drive_name):
+        #     raise IOError('file does not exist')
+        volume = Volume()
+        drive = Drive.reconnect(drive_name)
+
+        '''
+        volume.volumeName = name    # should i include '\n' or not?
+        volume.numberOfBlocks = drive.num_blocks()
+        volume.bitmapStr = 'x' + '-' * (volume.numberOfBlocks - 2) + 'x'
+        '''
+
+        volume.drive = drive
+        volume.BLK_SIZE = drive.BLK_SIZE
+        volume.blocksOccupied = int(drive.read_block(0).split()[0].decode())
+        volumeInfoByte = bytearray()
+        for i in range(volume.blocksOccupied):
+            volumeInfoByte += (drive.read_block(i))
+        volume.fileName = drive_name
+        volumeInfoStr = volumeInfoByte.decode().split('\n')
+        volume.volumeName = volumeInfoStr[1].encode()
+        volume.numberOfBlocks = int(volumeInfoStr[2])
+        volume.bitmapStr = volumeInfoStr[3]
+        print("mounting volume with bitmap: " + volume.bitmapStr)
+        volume.rootDirIndex = int(volumeInfoStr[4])
+        volume.rootFileList = volume.getRootFileList()
+        volume.openingFiles = []
+
+        return volume
+    def update_volume_info_block(self):
+        for i in range(self.blocksOccupied):
+            data2=self.getOutput().encode()[i * self.drive.BLK_SIZE : (i+1) * self.drive.BLK_SIZE].ljust(self.BLK_SIZE)
+            print("writting to block: " + str(i) + " data: " + str(data2) + " len: " + str(len(data2)))
+            self.drive.write_block(i, data2)
+
+    def unmount(self):
+        '''
+        Unmounts the volume and disconnects the drive.
+        '''
+        print ("unmounting file system: " + self.drive.name)
+        for i in self.openingFiles:
+            i.flush()
+        # write rootDirIndex to drive
+        # drive.write_block()
+        # rootFilesBytes = bytearray()
+        filesInfoBytes = bytearray()
+        for i in self.openingFiles:
+            blocksRequired = math.ceil(len(i.fileContentByte) / self.drive.BLK_SIZE)
+            blocksOccupiedMapIndex = []
+            # blocksOccupiedMapIndex = [int(s) for i in range(blocksRequired) : s = self.bitmapStr.find('-') ]
+            for j in range(blocksRequired):
+                availableBlockIndex = self.retriveAvailableBlock()
+                blocksOccupiedMapIndex.append(availableBlockIndex)
+                data = i.fileContentByte[j * self.drive.BLK_SIZE : (j + 1) * self.drive.BLK_SIZE ].ljust(self.drive.BLK_SIZE)
+                self.drive.write_block(availableBlockIndex, data)
+            filesInfoBytes+=(i.fileName+("\n"+str(i.fileSize)+"\n"+str(i.fileMapBytesIndex)+"\n").encode())
+            print("add file: " + i.toString() + "\n" )
+            self.write_file_map(i.fileMapBytesIndex, blocksOccupiedMapIndex)
+        # write file info to a new available block
+        print("filesInfoBytes: " + str(filesInfoBytes))
+        root_files_required_num_of_blocks = math.ceil(len(filesInfoBytes) / self.drive.BLK_SIZE)
+        print("root_files_required_num_of_blocks: int: " + str(root_files_required_num_of_blocks))
+        root_files_required_num_of_blocks = [self.retriveAvailableBlock() for i in list(range(root_files_required_num_of_blocks))]
+        print("root_files_required_num_of_blocks: byte: " + str(root_files_required_num_of_blocks))
+        # write_file_map rootDirIndex
+        self.write_file_map(self.rootDirIndex, root_files_required_num_of_blocks)
+        for i in list(range(len(root_files_required_num_of_blocks))):
+            print("writing files info: " + str(filesInfoBytes) + " to block: " + str(root_files_required_num_of_blocks[i]))#str(root_files_required_num_of_blocks))
+            self.drive.write_block(root_files_required_num_of_blocks[i], filesInfoBytes[i * self.BLK_SIZE : (i + 1) * self.BLK_SIZE].ljust(self.BLK_SIZE))
+        # print("filename: " + i.fileName.decode() + " blocksOccupiedMapIndex: " + str(blocksOccupiedMapIndex) + " content: " + i.fileContentByte.decode())
+        # rewrite bitmap:
+        print ("writting bitmap to volume info block: " + self.bitmapStr)
+        self.update_volume_info_block()
+
+        self.openingFiles = []
+        print ("finished unmounting file system: " + self.drive.name)
+        # input("PRESS ENTER TO CONTINUE.")
+        return Volume()
+    def write_file_map(self,fileMapBytesIndex, blocksOccupiedMapIndex):
+        data = bytearray()
+        for i in blocksOccupiedMapIndex:
+            data += '{:' '>3}\n'.format(i).encode()
+        data += ('  0\n' * 18).encode()
+        data = data[:self.drive.BLK_SIZE]
+        self.drive.write_block(int(fileMapBytesIndex), data)
+        # drive.write_block(volume.numberOfBlocks - 1, ('  0\n' * 16).encode().ljust(self.drive.BLK_SIZE))
+
+    def read_file_map(self,fileMapBytesIndex):
+        blocksOccupiedMapIndex = []
+        fileMapBytes = self.drive.read_block(int(fileMapBytesIndex))
+        blocksOccupiedMapIndex = [int(s) for s in fileMapBytes.decode().split() if (s.isdigit() and s != '0' ) ]
+        return blocksOccupiedMapIndex
+
+    def retriveAvailableBlock(self):
+        availableBlockIndex = self.bitmapStr.find('-')
+        print("found space at: " + str(availableBlockIndex) + " current bitmapStr: " + self.bitmapStr)
+        if (availableBlockIndex) == -1 : 
+                raise IOError("disk out of space")
+                return 
+        else :
+            self.bitmapStr = self.bitmapStr[:availableBlockIndex] + 'x' + self.bitmapStr[availableBlockIndex+1:]
+            return availableBlockIndex
+
+    def getRootFileList(self):
+        fileList = []
+        fileMapBytes = self.drive.read_block(self.drive.num_blocks() -1 )
+        
+        fileMapIndex = [int(s) for s in fileMapBytes.decode().split() if (s.isdigit() and s != '0' ) ]
+        fileInfoByte = bytearray()
+        print("fileMapIndex: " + str(fileMapIndex))
+        for i in fileMapIndex:
+            fileInfoByte += self.drive.read_block(i)
+        fileInfoStr = [s.strip() for s in fileInfoByte.decode().split("\n") if s.strip() != ""]
+        print("fileInfoStr in getRootFileList: " + str(fileInfoStr) + " len: " + str(len(fileInfoStr)))
+        for i in list(range(0,len(fileInfoStr),3)):
+            if fileInfoStr[i].strip() != '':
+                fileName = fileInfoStr[i]
+                i+=1
+                fileSize = fileInfoStr[i]
+                i+=1
+                fileMapBytesIndex = fileInfoStr[i]
+                file = A2File(fileName.encode(), fileMapBytesIndex, int(fileSize))
+                print("adding new file to fileList: " + str(file.fileName) + " empty?" + str(file.fileContentByte.decode() == "") + " size: " + str(file.fileSize)) 
+                fileList.append(file)
+
+        return fileList
+
+    def open_file(self, file):
+        # read file content
+        content = bytearray()
+
+        root_files_required_num_of_blocks = self.drive.read_block(int(file.fileMapBytesIndex))
+        print("self.drive.read_block(int(file.fileMapBytesIndex)): " + str(self.drive.read_block(int(file.fileMapBytesIndex))))
+        root_files_required_num_of_blocks = [int(s.strip()) for s in root_files_required_num_of_blocks.decode().split() if s.isdigit() and int(s) != 0]
+        print("opening existing file: " + str(file.fileName) + " root_files_required_num_of_blocks: " + str(root_files_required_num_of_blocks) + " filesize: " + str(file.size()))
+        file.fileContentByte=bytearray()
+        for i in root_files_required_num_of_blocks:
+            file.fileContentByte += self.drive.read_block(i)
+            print("deleting block: " + str(i))
+            self.bitmapStr = self.bitmapStr[:i] + '-' + self.bitmapStr[i+1:]
+            self.drive.write_block(i, b' ' * self.drive.BLK_SIZE)
+            input("deletion finished. bitmap: " + self.bitmapStr )
+        print("file.content: " + str(file.fileContentByte))
+        # for i in self.read_file_map(file.fileMapBytesIndex):
+        #     print("deleting block: " + i)
+        #     self.bitmapStr = self.bitmapStr[:i] + '-' + self.bitmapStr[i+1:]
+        #     self.drive.write_block(i, b' ' * self.drive.BLK_SIZE)
+        self.openingFiles.append(file)
+        return file
+
+    
+    def open(self, filename):
+        '''
+        Opens a file for read and write operations.
+        If the file does not exist it is created.
+        Returns an A2File object.
+        '''
+        print("opening file: " + str(filename))
+        if not filename.decode():
+            raise ValueError("file name is empty")
+        if "\n" in filename.decode():
+            raise ValueError("file name includes new line character")
+        if "/" in filename.decode():
+            raise ValueError("does not support subdirectory yet")
+
+
+        # if not os.path.exists(filename):
+        print("openingFiles: ",end="")
+        for i in self.openingFiles:
+            # if the file is already open
+            print(str(i.fileName), end="")
+            if i.fileName == filename : 
+                print("find file already opening: " + filename.decode())
+                return i
+        print()
+        print("rootFileList: ",end="")
+        # if the file already exists:
+        for i in self.rootFileList:
+            print(str(i.fileName), end="")
+            if i.fileName == filename:
+                print("\nfound existing file: " + filename.decode() )
+                return self.open_file(i)
+        print()
+        # create new file:
+        file = A2File(filename, self.retriveAvailableBlock())
+        self.rootFileList.append(file)
+        self.openingFiles.append(file)
+        print("opened new files: " + filename.decode() + "current opening files: ", end="" )
+        for i in self.openingFiles:
+            print(i.fileName.decode(), end="")
+        print()
+        #open(filename, 'w+')
+        return file

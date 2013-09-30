@@ -1,23 +1,42 @@
 1
 file read volume
-8
-x------x
+9
+xxxxx--x
 7
                                 
 **  0 **
-                                                                
+  2
+  3
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+
 **  1 **
-                                                                
+A different fileAAaarghAaarghAaarghAaarghAaarghAaarghAaarghAaarg
 **  2 **
-                                                                
+hAaarghAaargh                                                   
 **  3 **
-                                                                
+fileA
+77
+1
+                                                     
 **  4 **
                                                                 
 **  5 **
                                                                 
 **  6 **
-  0
+  4
   0
   0
   0

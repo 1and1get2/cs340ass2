@@ -1,7 +1,7 @@
 3
 file creation volume
 100
-xxx----------------------------------
+xxxxxxxxxxxxxxxxxxxx-----------------
 **  0 **
 --------------------------------------------------------------x
 
@@ -9,19 +9,51 @@ xxx----------------------------------
 99
                                                              
 **  2 **
-                                                                
+  5
+  6
+  7
+  8
+  9
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+
 **  3 **
-                                                                
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+  0
+  0
+  0
+  0
+  0
+  0
+  0
+
 **  4 **
-                                                                
+Hello from fileAHello from fileAHello from fileAHello from fileA
 **  5 **
-                                                                
+Hello from fileAHello from fileAHello from fileAHello from fileA
 **  6 **
-                                                                
+Hello from fileAHello from fileAHello from fileAHello from fileA
 **  7 **
-                                                                
+Hello from fileAHello from fileAHello from fileAHello from fileA
 **  8 **
-                                                                
+Hello from fileAHello from fileAHello from fileAHello from fileA
 **  9 **
                                                                 
 ** 10 **
@@ -37,11 +69,17 @@ xxx----------------------------------
 ** 15 **
                                                                 
 ** 16 **
-                                                                
+                                                    Welcome to f
 ** 17 **
-                                                                
+ileB                                                            
 ** 18 **
-                                                                
+fileA
+320
+3
+fileB
+516
+4
+                                        
 ** 19 **
                                                                 
 ** 20 **
@@ -201,7 +239,7 @@ xxx----------------------------------
 ** 97 **
                                                                 
 ** 98 **
-  0
+ 19
   0
   0
   0

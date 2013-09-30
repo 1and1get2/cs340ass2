@@ -1,0 +1,7 @@
+<question>
+
+Would your solution work correctly with multiple threads? If the answer is yes, explain how this is
+guaranteed. If the answer is no, describe a sequence of events which would cause a problem.
+
+<answer>
+no. there is no close() method for files neither a counter for how many times a file been opened, so it doesn't work

@@ -80,7 +80,10 @@ class Drive(object):
         if len(data) != Drive.BLK_SIZE:
             raise ValueError('data not block size')
         self.file.seek(n * (Drive.BLK_SIZE + len(Drive.SEPARATOR)))
+        # print("writting: " + str(data))
         written = self.file.write(data)
+        # self.file.flush()
+        # input("wrote")
         if written != Drive.BLK_SIZE:
             raise IOError('incomplete block written')
         
